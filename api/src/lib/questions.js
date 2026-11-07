@@ -153,7 +153,7 @@ const questions = [
       'Porque las funciones no pueden escribir logs',
       'Porque el código se ejecuta sin CPU ni memoria'
     ],
-    answer: 0,
+    answer: 9,
     explanation:
       'Al no administrar máquinas virtuales ni tener sesión SSH persistente, las métricas de latencia, errores 4xx/5xx y trazas por instancia se centralizan en el servicio de observabilidad de la nube.'
   }

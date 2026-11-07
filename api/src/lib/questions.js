@@ -142,6 +142,20 @@ const questions = [
     answer: 1,
     explanation:
       'Static Web Apps crea un entorno de staging por Pull Request (el plan Free permite unos pocos simultáneos). Al cerrar el PR, el job "close" lo elimina.'
+  },
+  {
+    id: 'q11',
+    concept: 'Observabilidad serverless',
+    text: '¿Por qué las funciones administradas requieren un servicio de monitoreo externo como Cloud Monitoring / Application Insights?',
+    options: [
+      'Porque en serverless no tienes acceso SSH a servidores fijos y las instancias son efímeras',
+      'Porque el navegador guarda todos los logs del servidor',
+      'Porque las funciones no pueden escribir logs',
+      'Porque el código se ejecuta sin CPU ni memoria'
+    ],
+    answer: 0,
+    explanation:
+      'Al no administrar máquinas virtuales ni tener sesión SSH persistente, las métricas de latencia, errores 4xx/5xx y trazas por instancia se centralizan en el servicio de observabilidad de la nube.'
   }
 ];
 

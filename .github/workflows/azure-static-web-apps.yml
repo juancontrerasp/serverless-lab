@@ -64,7 +64,7 @@ jobs:
               gh pr comment ${{ github.event.pull_request.number }} --body "⚡ **Entorno de Preview desplegado:** $PREVIEW_URL"
             fi
           else
-            firebase deploy --only functions,hosting --project "$PROJECT_ID" --token "$FIREBASE_TOKEN"
+            firebase deploy --only functions,hosting --project "$PROJECT_ID" --token "$FIREBASE_TOKEN" --force
           fi
 
   close_pull_request_job:

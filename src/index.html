@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Laboratorio Serverless</title>
+  <meta name="description" content="Laboratorio interactivo de serverless con Azure Static Web Apps, Azure Functions y GitHub Actions.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="top">
+    <div class="wrap">
+      <p class="eyebrow">Azure Static Web Apps · Azure Functions · GitHub Actions</p>
+      <h1>Laboratorio Serverless</h1>
+      <p class="lead">Este sitio es estático, pero cada pregunta se califica en una <strong>función serverless</strong>. Explora, observa y responde.</p>
+      <div id="api-status" class="status" role="status">Comprobando la API…</div>
+    </div>
+  </header>
+
+  <nav class="tabs wrap" role="tablist" aria-label="Secciones del laboratorio">
+    <button role="tab" aria-selected="true" aria-controls="tab-conceptos" id="t-conceptos">1. Conceptos</button>
+    <button role="tab" aria-selected="false" aria-controls="tab-vivo" id="t-vivo">2. Laboratorio en vivo</button>
+    <button role="tab" aria-selected="false" aria-controls="tab-quiz" id="t-quiz">3. Preguntas</button>
+    <button role="tab" aria-selected="false" aria-controls="tab-pipeline" id="t-pipeline">4. Pipeline</button>
+    <button role="tab" aria-selected="false" aria-controls="tab-cert" id="t-cert">5. Certificado</button>
+  </nav>
+
+  <main class="wrap">
+    <!-- 1. CONCEPTOS -->
+    <section id="tab-conceptos" role="tabpanel" aria-labelledby="t-conceptos">
+      <h2>¿Qué es serverless?</h2>
+      <p>Serverless no significa "sin servidores": significa que <strong>tú no los administras</strong>. Escribes funciones pequeñas, la nube las ejecuta cuando ocurre un evento, escala sola y cobra por uso.</p>
+
+      <div class="grid">
+        <article class="card">
+          <h3>⚡ FaaS y triggers</h3>
+          <p>Function as a Service: unidades de código que se ejecutan ante un <em>trigger</em> (HTTP, cola, temporizador, cambio en una base de datos).</p>
+          <p class="where">En este lab: <code>api/src/functions/*.js</code>, todas con trigger HTTP.</p>
+        </article>
+        <article class="card">
+          <h3>🧊 Cold start</h3>
+          <p>Si no hay una instancia lista, la plataforma crea una: carga runtime y código. Esa primera llamada es más lenta.</p>
+          <p class="where">Obsérvalo: pestaña 2, campo <code>coldStart</code>.</p>
+        </article>
+        <article class="card">
+          <h3>🫙 Stateless</h3>
+          <p>La memoria de una instancia es temporal y no se comparte. El estado duradero va en un servicio externo (Storage, Cosmos DB…).</p>
+          <p class="where">Obsérvalo: el contador <code>invocationsOnThisInstance</code> se reinicia.</p>
+        </article>
+        <article class="card">
+          <h3>📈 Escalado automático</h3>
+          <p>Ante más tráfico, la plataforma agrega instancias (scale-out) y luego las retira (incluso hasta cero).</p>
+          <p class="where">Obsérvalo: botón "Ráfaga" y los distintos <code>instanceId</code>.</p>
+        </article>
+        <article class="card">
+          <h3>💸 Pago por uso</h3>
+          <p>Pagas ejecuciones y tiempo de cómputo, no máquinas encendidas. Sin tráfico, costo de cómputo ≈ 0.</p>
+          <p class="where">En este lab: plan <strong>Free</strong> de Static Web Apps.</p>
+        </article>
+        <article class="card">
+          <h3>🌐 Static Web Apps</h3>
+          <p>Hosting global para HTML/CSS/JS + una API administrada en <code>/api</code>, en el mismo dominio (sin CORS).</p>
+          <p class="where">En este lab: <code>src/</code> (sitio) y <code>api/</code> (funciones).</p>
+        </article>
+      </div>
+
+      <h3>Arquitectura del laboratorio</h3>
+      <div class="arch" aria-label="Diagrama: navegador, Static Web Apps, contenido estático y funciones">
+        <div class="node">🧑‍💻 Navegador</div>
+        <div class="arrow">→</div>
+        <div class="node big">
+          <strong>Azure Static Web Apps (Free)</strong>
+          <div class="split">
+            <div class="sub">📄 <code>/</code><br>Contenido estático<br><small>src/</small></div>
+            <div class="sub fn">⚡ <code>/api/*</code><br>Azure Functions administradas<br><small>api/</small></div>
+          </div>
+        </div>
+      </div>
+      <p><button class="primary" data-goto="t-vivo">Continuar al laboratorio en vivo →</button></p>
+    </section>
+
+    <!-- 2. LABORATORIO EN VIVO -->
+    <section id="tab-vivo" role="tabpanel" aria-labelledby="t-vivo" hidden>
+      <h2>Laboratorio en vivo: observa la función</h2>
+      <p>Cada clic invoca <code>GET /api/info</code>. La función responde con datos de la <em>instancia</em> que la ejecutó.</p>
+
+      <div class="actions">
+        <button class="primary" id="btn-info">Invocar /api/info</button>
+        <button id="btn-burst">Ráfaga: 15 invocaciones en paralelo</button>
+      </div>
+
+      <div class="two">
+        <div>
+          <h3>Última respuesta</h3>
+          <pre id="info-out" class="code">Aún no has invocado la función.</pre>
+        </div>
+        <div>
+          <h3>Historial</h3>
+          <table class="tbl">
+            <thead><tr><th>#</th><th>Instancia</th><th>Cold</th><th>Contador</th><th>Latencia</th></tr></thead>
+            <tbody id="info-log"></tbody>
+          </table>
+          <p id="burst-summary" class="muted"></p>
+        </div>
+      </div>
+
+      <div class="callout">
+        <strong>Experimentos guiados</strong>
+        <ol>
+          <li><strong>Cold start:</strong> espera ~20 min sin usar el sitio e invoca una vez. ¿<code>coldStart</code> es <code>true</code>? ¿La latencia es mayor que en la segunda llamada?</li>
+          <li><strong>Stateless:</strong> anota el valor de <code>invocationsOnThisInstance</code>. Haz un nuevo despliegue (un commit) y vuelve a invocar. ¿Qué pasó con el contador?</li>
+          <li><strong>Escalado:</strong> lanza varias ráfagas. ¿Cuántos <code>instanceId</code> distintos aparecen? (En el plan Free puede que veas solo uno; discútelo.)</li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- 3. QUIZ -->
+    <section id="tab-quiz" role="tabpanel" aria-labelledby="t-quiz" hidden>
+      <h2>Preguntas</h2>
+      <p>Las preguntas llegan desde <code>GET /api/questions</code> <strong>sin la respuesta</strong>. Al enviar cada formulario, <code>POST /api/answer</code> califica en el servidor y devuelve la explicación.</p>
+      <div class="progress"><div id="progress-bar"></div></div>
+      <p id="progress-text" class="muted"></p>
+      <div id="quiz"></div>
+      <p><button class="primary" data-goto="t-pipeline">Continuar al pipeline →</button></p>
+    </section>
+
+    <!-- 4. PIPELINE -->
+    <section id="tab-pipeline" role="tabpanel" aria-labelledby="t-pipeline" hidden>
+      <h2>CI/CD sin Service Principal</h2>
+      <p>Con Azure for Students normalmente <strong>no puedes crear un Service Principal</strong> (SPN) en Entra ID. Static Web Apps resuelve esto con un <strong>token de despliegue</strong>: una credencial que solo permite publicar en <em>esa</em> app, sin acceso a tu suscripción.</p>
+
+      <ol class="flow">
+        <li><span>1</span><div><strong>git push / Pull Request</strong><br>Cambias código en <code>src/</code> o <code>api/</code>.</div></li>
+        <li><span>2</span><div><strong>GitHub Actions — job <code>test</code></strong><br><code>npm test</code> valida la lógica de las funciones. Si falla, no se despliega.</div></li>
+        <li><span>3</span><div><strong>Job <code>build_and_deploy_job</code></strong><br><code>Azure/static-web-apps-deploy@v1</code> compila y sube sitio + API usando el secreto <code>AZURE_STATIC_WEB_APPS_API_TOKEN</code>.</div></li>
+        <li><span>4</span><div><strong>Producción o preview</strong><br>Push a <code>main</code> → producción. Pull Request → entorno de preview con URL propia.</div></li>
+        <li><span>5</span><div><strong>Job <code>close_pull_request_job</code></strong><br>Al cerrar el PR, se elimina el entorno de preview.</div></li>
+      </ol>
+
+      <form id="pipeline-form" class="qform">
+        <fieldset>
+          <legend>Autoevaluación rápida (se revisa en el navegador)</legend>
+          <label>¿Dónde guardas el token de despliegue?
+            <select name="where" required>
+              <option value="">Elige…</option>
+              <option value="yaml">Directamente en el archivo YAML</option>
+              <option value="secret">En Settings → Secrets and variables → Actions</option>
+              <option value="readme">En el README para que el equipo lo vea</option>
+            </select>
+          </label>
+          <label>¿Qué carpeta indica <code>api_location</code>?
+            <select name="api" required>
+              <option value="">Elige…</option>
+              <option value="src">src</option>
+              <option value="api">api</option>
+              <option value="dist">dist</option>
+            </select>
+          </label>
+          <button type="submit">Revisar</button>
+          <p id="pipeline-out" class="muted"></p>
+        </fieldset>
+      </form>
+      <p><button class="primary" data-goto="t-cert">Continuar al certificado →</button></p>
+    </section>
+
+    <!-- 5. CERTIFICADO -->
+    <section id="tab-cert" role="tabpanel" aria-labelledby="t-cert" hidden>
+      <h2>Certificado del laboratorio</h2>
+      <p>Este formulario envía tus respuestas a <code>POST /api/certificate</code>. La función recalifica todo en el servidor (no confía en el navegador) y genera un código verificable si apruebas (≥ 70 %).</p>
+      <form id="cert-form" class="qform">
+        <fieldset>
+          <label>Nombre o alias
+            <input name="name" required minlength="2" maxlength="60" autocomplete="off" placeholder="Ej.: Ana G.">
+          </label>
+          <button type="submit" class="primary">Solicitar certificado</button>
+        </fieldset>
+      </form>
+      <div id="cert-out"></div>
+    </section>
+  </main>
+
+  <footer class="wrap muted">
+    Sitio estático servido por Azure Static Web Apps · API en Azure Functions · Desplegado con GitHub Actions
+  </footer>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

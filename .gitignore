@@ -1,0 +1,6 @@
+node_modules/
+api/local.settings.json
+.DS_Store
+.env
+
+floci/.build/

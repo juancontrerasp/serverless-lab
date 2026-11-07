@@ -1,0 +1,19 @@
+# Floci: emulador local de AWS (gratis, sin cuenta). Todo responde en http://localhost:4566
+services:
+  floci:
+    image: floci/floci:latest   # para clases, fija una versión: floci/floci:x.y.z
+    container_name: floci
+    user: root
+    ports:
+      - "4566:4566"
+    volumes:
+      # Lambda ejecuta cada función en un contenedor Docker real.
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      # Segundos sin uso antes de destruir un contenedor de Lambda (en AWS real son minutos).
+      # Bajo para poder observar el cold start rápido en clase.
+      FLOCI_SERVICES_LAMBDA_CONTAINER_IDLE_TIMEOUT_SECONDS: "60"
+      # Máximo de contenedores "calientes" por función (escalado).
+      FLOCI_SERVICES_LAMBDA_WARM_POOL_MAX_PER_FUNCTION: "4"
+      # true = un contenedor nuevo en CADA invocación (todo es cold start).
+      FLOCI_SERVICES_LAMBDA_EPHEMERAL: "false"
